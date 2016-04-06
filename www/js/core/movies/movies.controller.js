@@ -14,6 +14,7 @@
     function MovieListingController($q,
                                     moviesRepository) {
         var vm = this;
+        vm.randomHeroMovie = randomHeroMovie;
 
         activate();
 
@@ -25,6 +26,16 @@
 
             $q.when(moviesRepository.get())
                 .then(function (movies) {
+                    vm.moviesList = movies;
+                });
+        }
+
+        /**
+        * @description: pulls out a random hero and searches movies of that hero.
+        * */
+        function randomHeroMovie(){
+            $q.when(moviesRepository.get())
+                .then(function(movies){
                     vm.moviesList = movies;
                 });
         }

@@ -1,6 +1,11 @@
 <!--Placeholder for random app view-->
 <ion-view view-title="Hero Spin">
-    <ion-content class="padding">
+
+    <ion-nav-buttons  side="right">
+        <button class="button button-icon button-clear ion-loop" ng-click="movieListingVM.randomHeroMovie()"></button>
+    </ion-nav-buttons>
+
+    <ion-content>
         <div class="list">
             <a collection-repeat="movie in movieListingVM.moviesList track by movie.imdbID" class="item item-avatar" href="#">
                 <img ng-src="{{movie.Poster}}">

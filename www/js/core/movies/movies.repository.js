@@ -7,12 +7,14 @@
         [
             "$q",
             "movies.api",
+            "heroes.repository",
             moviesRepository
         ]
     );
 
     function moviesRepository($q,
-                              moviesApi) {
+                              moviesApi,
+                              heroesRepository) {
 
         var _this = {
             get: get
@@ -23,7 +25,9 @@
          * Alternately syncs with the omdb api and caches the data locally
          * */
         function get() {
-            return $q.when(moviesApi.search("Hulk"))
+
+            return $q.when(heroesRepository.randomHero())
+                .then(moviesApi.search)
                 .then(function (movies) {
                     return $q.resolve(movies);
                 }, function () {
