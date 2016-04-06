@@ -3,12 +3,14 @@
   "version": "1.1.1",
   "description": "HeroSpin: An Ionic project",
   "dependencies": {
+    "elementtree": "^0.1.6",
     "gulp": "^3.5.6",
     "gulp-concat": "^2.2.0",
     "gulp-minify-css": "^0.3.0",
     "gulp-rename": "^1.2.0",
     "gulp-sass": "^2.0.4",
-    "gulp-uglify": "^1.5.3"
+    "gulp-uglify": "^1.5.3",
+    "plist": "^1.2.0"
   },
   "devDependencies": {
     "bower": "^1.3.3",

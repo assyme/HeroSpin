@@ -16,7 +16,7 @@
 
         var CONSTANTS = {
             URLS: {
-                searchUrl: "http://www.omdbapi.com/"
+                searchUrl: "https://www.omdbapi.com/"
             }
         };
 

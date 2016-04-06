@@ -194,6 +194,152 @@
     "use strict";
 
     angular.module("starter")
+        .factory("movies.api",
+        [
+            "$q",
+            "BaseCommunicator",
+            moviesApi
+        ]
+    );
+
+    function moviesApi($q,
+                       BaseCommunicator) {
+
+        var CONSTANTS = {
+            URLS: {
+                searchUrl: "https://www.omdbapi.com/"
+            }
+        };
+
+        var _this = {
+            search: search
+        };
+
+        /**
+         * @description: Searches the imdb public api for the movie name
+         * */
+        function search(heroName) {
+
+            var defer = $q.defer(),
+                resolve = function (response) {
+                    if (response.data && response.data.Response === "True") {
+                        defer.resolve(response.data.Search);
+                    } else {
+                        defer.reject();
+                    }
+                };
+
+            if (!heroName) {
+                return $q.resolve([]);
+            }
+
+            var request = {
+                api: CONSTANTS.URLS.searchUrl,
+                method: 'GET',
+                data: {s: heroName}
+            };
+
+
+            BaseCommunicator.sendRequest(request)
+                .then(resolve, defer.reject, defer.notify);
+
+            return defer.promise;
+
+        }
+
+        return _this;
+    }
+})();
+;
+(function () {
+    "use strict";
+
+    angular.module("starter")
+        .controller("MovieListingController",
+        [
+            "$q",
+            "movies.repository",
+            MovieListingController
+        ]
+    );
+
+    function MovieListingController($q,
+                                    moviesRepository) {
+        var vm = this;
+        vm.randomHeroMovie = randomHeroMovie;
+
+        activate();
+
+        /**
+         * @description: initializes the controller and setups defaults
+         * */
+        function activate() {
+            vm.moviesList = [];
+
+            $q.when(moviesRepository.get())
+                .then(function (movies) {
+                    vm.moviesList = movies;
+                });
+        }
+
+        /**
+        * @description: pulls out a random hero and searches movies of that hero.
+        * */
+        function randomHeroMovie(){
+            $q.when(moviesRepository.get())
+                .then(function(movies){
+                    vm.moviesList = movies;
+                });
+        }
+    }
+})();
+;
+(function () {
+    "use strict";
+
+    angular.module("starter")
+        .factory("movies.repository",
+        [
+            "$q",
+            "movies.api",
+            "heroes.repository",
+            moviesRepository
+        ]
+    );
+
+    function moviesRepository($q,
+                              moviesApi,
+                              heroesRepository) {
+
+        var _this = {
+            get: get
+        };
+
+        /**
+         * @description: gets movies from the local storage first,
+         * Alternately syncs with the omdb api and caches the data locally
+         * */
+        function get() {
+
+            return $q.when(heroesRepository.randomHero())
+                .then(moviesApi.search)
+                .then(function (movies) {
+                    return $q.resolve(movies);
+                }, function () {
+                    //TODO : log the error.
+                    //TODO : resolve from local cache.
+                    return $q.resolve([]);
+                });
+        }
+
+        return _this;
+    }
+})();
+;
+(function () {
+    "use strict";
+
+    angular.module("starter")
         .factory("BaseCommunicator",
         [
             "$q",
@@ -386,150 +532,3 @@
     }
 })();
 
-
-;
-(function () {
-    "use strict";
-
-    angular.module("starter")
-        .factory("movies.api",
-        [
-            "$q",
-            "BaseCommunicator",
-            moviesApi
-        ]
-    );
-
-    function moviesApi($q,
-                       BaseCommunicator) {
-
-        var CONSTANTS = {
-            URLS: {
-                searchUrl: "http://www.omdbapi.com/"
-            }
-        };
-
-        var _this = {
-            search: search
-        };
-
-        /**
-         * @description: Searches the imdb public api for the movie name
-         * */
-        function search(heroName) {
-
-            var defer = $q.defer(),
-                resolve = function (response) {
-                    if (response.data && response.data.Response === "True") {
-                        defer.resolve(response.data.Search);
-                    } else {
-                        defer.reject();
-                    }
-                };
-
-            if (!heroName) {
-                return $q.resolve([]);
-            }
-
-            var request = {
-                api: CONSTANTS.URLS.searchUrl,
-                method: 'GET',
-                data: {s: heroName}
-            };
-
-
-            BaseCommunicator.sendRequest(request)
-                .then(resolve, defer.reject, defer.notify);
-
-            return defer.promise;
-
-        }
-
-        return _this;
-    }
-})();
-;
-(function () {
-    "use strict";
-
-    angular.module("starter")
-        .controller("MovieListingController",
-        [
-            "$q",
-            "movies.repository",
-            MovieListingController
-        ]
-    );
-
-    function MovieListingController($q,
-                                    moviesRepository) {
-        var vm = this;
-        vm.randomHeroMovie = randomHeroMovie;
-
-        activate();
-
-        /**
-         * @description: initializes the controller and setups defaults
-         * */
-        function activate() {
-            vm.moviesList = [];
-
-            $q.when(moviesRepository.get())
-                .then(function (movies) {
-                    vm.moviesList = movies;
-                });
-        }
-
-        /**
-        * @description: pulls out a random hero and searches movies of that hero.
-        * */
-        function randomHeroMovie(){
-            $q.when(moviesRepository.get())
-                .then(function(movies){
-                    vm.moviesList = movies;
-                });
-        }
-    }
-})();
-;
-(function () {
-    "use strict";
-
-    angular.module("starter")
-        .factory("movies.repository",
-        [
-            "$q",
-            "movies.api",
-            "heroes.repository",
-            moviesRepository
-        ]
-    );
-
-    function moviesRepository($q,
-                              moviesApi,
-                              heroesRepository) {
-
-        var _this = {
-            get: get
-        };
-
-        /**
-         * @description: gets movies from the local storage first,
-         * Alternately syncs with the omdb api and caches the data locally
-         * */
-        function get() {
-
-            return $q.when(heroesRepository.randomHero())
-                .then(moviesApi.search)
-                .then(function (movies) {
-                    return $q.resolve(movies);
-                }, function () {
-                    //TODO : log the error.
-                    //TODO : resolve from local cache.
-                    return $q.resolve([]);
-                });
-        }
-
-        return _this;
-    }
-})();
