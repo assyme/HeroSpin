@@ -1,6 +1,13 @@
 <!--Placeholder for random app view-->
 <ion-view view-title="Hero Spin">
     <ion-content class="padding">
-        <p>place holder for random hero tabs</p>
+        <div class="list">
+            <a collection-repeat="movie in movieListingVM.moviesList track by movie.imdbID" class="item item-avatar" href="#">
+                <img ng-src="{{movie.Poster}}">
+                <h2>{{movie.Title}}</h2>
+                <h2>{{movie.Type}}</h2>
+                <span class="item-note">{{movie.Year}}</span>
+            </a>
+        </div>
     </ion-content>
 </ion-view>

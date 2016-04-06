@@ -24,7 +24,8 @@
                 url: '/random',
                 views: {
                     'tab-random-hero': {
-                        templateUrl: 'js/core/templates/random-hero.html'
+                        templateUrl: 'js/core/templates/random-hero.html',
+                        controller : "MovieListingController as movieListingVM"
                     }
                 }
             })
