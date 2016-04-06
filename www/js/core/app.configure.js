@@ -32,7 +32,8 @@
                 url: '/favourite',
                 views: {
                     'tab-favourite-hero': {
-                        templateUrl: 'js/core/templates/favourite-hero.html'
+                        templateUrl: 'js/core/templates/favourite-hero.html',
+                        controller : 'HeroListController as heroListVM'
                     }
                 }
             });
