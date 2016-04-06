@@ -6,6 +6,7 @@ var sass = require('gulp-sass');
 var minifyCss = require('gulp-minify-css');
 var rename = require('gulp-rename');
 var sh = require('shelljs');
+var uglify = require('gulp-uglify');
 
 var paths = {
   sass: ['./scss/**/*.scss']
@@ -48,4 +49,25 @@ gulp.task('git-check', function(done) {
     process.exit(1);
   }
   done();
+});
+
+gulp.task('js', function () {
+    gulp.src(['www/js/core/app.module.js',
+        'www/js/core/**/*.js',
+        '!www/js/core/bundle.js',
+        '!www/js/core/bundle.min.js'])
+        .pipe(concat('www/js/core/bundle.js'))
+        .pipe(gulp.dest('.'));
+});
+
+gulp.task('watchjs', ['js'], function () {
+    gulp.watch('www/js/core/**/*.js', ['js']);
+});
+
+gulp.task('minify-bundles', function () {
+
+    gulp.src('www/js/core/bundle.js')
+        .pipe(rename({extname: '.min.js'}))
+        .pipe(uglify())
+        .pipe(gulp.dest('www/features/core'));
 });
