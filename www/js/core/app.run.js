@@ -6,6 +6,7 @@
         .run(
         [
             "$ionicPlatform",
+            "GlobalSettings",
             runIonic
         ]
     );
@@ -13,7 +14,8 @@
     /**
      * @description: Main entry to the ionic app
      * */
-    function runIonic($ionicPlatform) {
+    function runIonic($ionicPlatform,
+                      GlobalSettings) {
 
         $ionicPlatform.ready(function () {
             if (window.cordova && window.cordova.plugins.Keyboard) {
@@ -28,6 +30,13 @@
             }
             if (window.StatusBar) {
                 StatusBar.styleDefault();
+            }
+
+            //Set prefix/file location path for images and other resources.
+            if (window.cordova) {
+                GlobalSettings.APP_DATA_PATH = cordova.file.dataDirectory + "agency_data/";
+            } else {
+                GlobalSettings.APP_DATA_PATH = "";
             }
         });
 

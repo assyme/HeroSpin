@@ -8,7 +8,7 @@
     <ion-content>
         <div class="list">
             <a collection-repeat="movie in movieListingVM.moviesList track by movie.imdbID" class="item item-thumbnail-left" href="#">
-                <img ng-src="{{movie.Poster}}">
+                <img image-cache="{{movie.Poster}}" ng-src="{{movie.Poster}}">
                 <h2>{{movie.Title}}</h2>
                 <p>{{movie.Type}}</p>
                 <p>{{movie.Year}}</p>

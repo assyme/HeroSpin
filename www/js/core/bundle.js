@@ -27,14 +27,21 @@
                 abstract: true,
                 resolve: { // putting this at the root of the route so that this has to be resolved before application start.
                     AppState: [
+                        '$q',
                         'DataStore',
                         'DbUpgrade',
                         'movies.repository',
-                        function (DataStore, DbUpgrade, moviesRepository) {
+                        'image.repository',
+                        function ($q,DataStore, DbUpgrade, moviesRepository,imageRepository) {
                             return DataStore.init()
                                 .then(DbUpgrade.upgrade)
                                 .then(function () {
-                                    return moviesRepository.load();
+                                    return $q.all([
+                                        moviesRepository.load(),
+                                        imageRepository.init()
+                                    ]).then(function(){
+                                        return $q.resolve();
+                                    });
                                 });
                         }
                     ]
@@ -73,6 +80,7 @@
         .run(
         [
             "$ionicPlatform",
+            "GlobalSettings",
             runIonic
         ]
     );
@@ -80,7 +88,8 @@
     /**
      * @description: Main entry to the ionic app
      * */
-    function runIonic($ionicPlatform) {
+    function runIonic($ionicPlatform,
+                      GlobalSettings) {
 
         $ionicPlatform.ready(function () {
             if (window.cordova && window.cordova.plugins.Keyboard) {
@@ -95,6 +104,13 @@
             }
             if (window.StatusBar) {
                 StatusBar.styleDefault();
+            }
+
+            //Set prefix/file location path for images and other resources.
+            if (window.cordova) {
+                GlobalSettings.APP_DATA_PATH = cordova.file.dataDirectory + "agency_data/";
+            } else {
+                GlobalSettings.APP_DATA_PATH = "";
             }
         });
 
@@ -199,6 +215,248 @@
         function randomHero(){
             var randomNumber = _.random(0,_cache.length - 1);
             return _cache[randomNumber].name;
+        }
+
+        return _this;
+    }
+})();
+;
+(function () {
+    "use strict";
+
+    angular.module("starter")
+        .factory("movies.api",
+        [
+            "$q",
+            "BaseCommunicator",
+            moviesApi
+        ]
+    );
+
+    function moviesApi($q,
+                       BaseCommunicator) {
+
+        var CONSTANTS = {
+            URLS: {
+                searchUrl: "https://www.omdbapi.com/"
+            }
+        };
+
+        var _this = {
+            search: search
+        };
+
+        /**
+         * @description: Searches the imdb public api for the movie name
+         * */
+        function search(heroName) {
+
+            var defer = $q.defer(),
+                resolve = function (response) {
+                    if (response.data && response.data.Response === "True") {
+                        defer.resolve({
+                            hero : heroName,
+                            movies : response.data.Search
+                        });
+                    } else {
+                        defer.reject();
+                    }
+                };
+
+            if (!heroName) {
+                return $q.resolve([]);
+            }
+
+            var request = {
+                api: CONSTANTS.URLS.searchUrl,
+                method: 'GET',
+                data: {s: heroName}
+            };
+
+
+            BaseCommunicator.sendRequest(request)
+                .then(resolve, defer.reject, defer.notify);
+
+            return defer.promise;
+
+        }
+
+        return _this;
+    }
+})();
+;
+(function () {
+    "use strict";
+
+    angular.module("starter")
+        .controller("MovieListingController",
+        [
+            "$q",
+            "$scope",
+            "$stateParams",
+            "movies.repository",
+            MovieListingController
+        ]
+    );
+
+    function MovieListingController($q,
+                                    $scope,
+                                    $stateParams,
+                                    moviesRepository) {
+        var vm = this;
+        vm.randomHeroMovie = randomHeroMovie;
+
+
+        $scope.$on('$ionicView.enter', onViewEnter);
+
+        activate();
+
+        /**
+         * @description: initializes the controller and setups defaults
+         * */
+        function activate() {
+            vm.moviesList = [];
+        }
+
+        function onViewEnter(){
+            vm.selectedHero = $stateParams.name;
+            $q.when(moviesRepository.get(vm.selectedHero))
+                .then(function (movies) {
+                    vm.moviesList = movies;
+                });
+        }
+
+        /**
+        * @description: pulls out a random hero and searches movies of that hero.
+        * */
+        function randomHeroMovie(){
+            $q.when(moviesRepository.get())
+                .then(function(movies){
+                    vm.moviesList = movies;
+                });
+        }
+    }
+})();
+;
+(function () {
+    "use strict";
+
+    angular.module("starter")
+        .factory("movies.repository",
+        [
+            "$q",
+            "movies.api",
+            "heroes.repository",
+            "DataStore",
+            "TableNames",
+            moviesRepository
+        ]
+    );
+
+    function moviesRepository($q,
+                              moviesApi,
+                              heroesRepository,
+                              DataStore,
+                              TableNames) {
+
+        var TABLE_NAME = TableNames.Movies.Name,
+            COLUMN = TableNames.Movies.Column,
+            _cache = {};
+
+        var _this = {
+            load: load,
+            get: get
+        };
+
+
+        /**
+         * @description: Loads movies from the database to the cache.
+         * */
+        function load() {
+            var selectQuery = squel.select()
+                .from(TABLE_NAME)
+                .field(COLUMN.key)
+                .field(COLUMN.value);
+
+            return DataStore.ExecuteQuery(selectQuery.toString()).then(function (results) {
+                processResults(results);
+                return $q.resolve();
+            },$q.reject);
+        }
+
+        /**
+         * @description: gets movies from the local storage first,
+         * Alternately syncs with the omdb api and caches the data locally
+         * @[inputs] - "string" name of selected hero.
+         * */
+        function get(selectedHero) {
+
+            return $q.when(
+                function(){
+                    if (selectedHero){
+                        return $q.resolve(selectedHero);
+                    }else{
+                        return heroesRepository.randomHero();
+                    }
+                }()
+            )
+                .then(function (hero) {
+                    if (_cache[hero]) {
+                        return $q.resolve(_cache[hero]);
+                    } else {
+                        return moviesApi.search(hero)
+                            .then(function (response) {
+                                //save it in local cache
+                                applyChanges(response.hero, response.movies);
+
+                                return $q.resolve(response.movies);
+                            }, function () {
+                                //TODO : log the error.
+                                //TODO : resolve from local cache.
+                                return $q.resolve([]);
+                            });
+                    }
+                })
+        }
+
+
+        /**
+         * @descriptions: processes movies retrieved from database.
+         *  creates movies objects from sql results.
+         * */
+        function processResults(results) {
+
+            if (results.rows.length > 0) {
+                for (var count = 0; count < results.rows.length; count++) {
+                    var rowValue = results.rows.item(count);
+                    var hero = rowValue.key;
+                    var movies = angular.fromJson(rowValue.value);
+                    _cache[hero] = movies;
+                }
+            }
+        }
+
+        function applyChanges(hero, movies) {
+
+            if (!movies || !movies.length) {
+                return;
+            }
+
+            var insert_query = squel.insert()
+                .into(TABLE_NAME)
+                .set(COLUMN.key)
+                .set(COLUMN.value)
+                .toParam();
+
+            //insert
+            return DataStore.ExecuteQuery(insert_query.text, [hero, angular.toJson(movies)]).then(function (sucess) {
+                // add to cache
+                _cache[hero] = movies;
+                return $q.resolve();
+
+            }, function (error) {
+                //TODO : Log error
+            });
         }
 
         return _this;
@@ -671,6 +929,19 @@
 
     }
 })();
+(function(){
+    "use strict";
+
+    var GlobalSettings = {
+        NO_IMAGE_URL : "img/no_pic_available.jpg",
+        APP_DATA_PATH : ""
+    };
+
+    angular.module("starter")
+        .constant("GlobalSettings",GlobalSettings);
+
+
+})();
 (function () {
     "use strict";
 
@@ -711,250 +982,6 @@
     "use strict";
 
     angular.module("starter")
-        .factory("movies.api",
-        [
-            "$q",
-            "BaseCommunicator",
-            moviesApi
-        ]
-    );
-
-    function moviesApi($q,
-                       BaseCommunicator) {
-
-        var CONSTANTS = {
-            URLS: {
-                searchUrl: "https://www.omdbapi.com/"
-            }
-        };
-
-        var _this = {
-            search: search
-        };
-
-        /**
-         * @description: Searches the imdb public api for the movie name
-         * */
-        function search(heroName) {
-
-            var defer = $q.defer(),
-                resolve = function (response) {
-                    if (response.data && response.data.Response === "True") {
-                        defer.resolve({
-                            hero : heroName,
-                            movies : response.data.Search
-                        });
-                    } else {
-                        defer.reject();
-                    }
-                };
-
-            if (!heroName) {
-                return $q.resolve([]);
-            }
-
-            var request = {
-                api: CONSTANTS.URLS.searchUrl,
-                method: 'GET',
-                data: {s: heroName}
-            };
-
-
-            BaseCommunicator.sendRequest(request)
-                .then(resolve, defer.reject, defer.notify);
-
-            return defer.promise;
-
-        }
-
-        return _this;
-    }
-})();
-;
-(function () {
-    "use strict";
-
-    angular.module("starter")
-        .controller("MovieListingController",
-        [
-            "$q",
-            "$scope",
-            "$stateParams",
-            "movies.repository",
-            MovieListingController
-        ]
-    );
-
-    function MovieListingController($q,
-                                    $scope,
-                                    $stateParams,
-                                    moviesRepository) {
-        var vm = this;
-        vm.randomHeroMovie = randomHeroMovie;
-
-
-        $scope.$on('$ionicView.enter', onViewEnter);
-
-        activate();
-
-        /**
-         * @description: initializes the controller and setups defaults
-         * */
-        function activate() {
-            vm.moviesList = [];
-
-
-        }
-
-        function onViewEnter(){
-            vm.selectedHero = $stateParams.name;
-            $q.when(moviesRepository.get(vm.selectedHero))
-                .then(function (movies) {
-                    vm.moviesList = movies;
-                });
-        }
-
-        /**
-        * @description: pulls out a random hero and searches movies of that hero.
-        * */
-        function randomHeroMovie(){
-            $q.when(moviesRepository.get())
-                .then(function(movies){
-                    vm.moviesList = movies;
-                });
-        }
-    }
-})();
-;
-(function () {
-    "use strict";
-
-    angular.module("starter")
-        .factory("movies.repository",
-        [
-            "$q",
-            "movies.api",
-            "heroes.repository",
-            "DataStore",
-            "TableNames",
-            moviesRepository
-        ]
-    );
-
-    function moviesRepository($q,
-                              moviesApi,
-                              heroesRepository,
-                              DataStore,
-                              TableNames) {
-
-        var TABLE_NAME = TableNames.Movies.Name,
-            COLUMN = TableNames.Movies.Column,
-            _cache = {};
-
-        var _this = {
-            load: load,
-            get: get
-        };
-
-
-        /**
-         * @description: Loads movies from the database to the cache.
-         * */
-        function load() {
-            var selectQuery = squel.select()
-                .from(TABLE_NAME)
-                .field(COLUMN.key)
-                .field(COLUMN.value);
-
-            return DataStore.ExecuteQuery(selectQuery.toString()).then(function (results) {
-                processResults(results);
-                return $q.resolve();
-            },$q.reject);
-        }
-
-        /**
-         * @description: gets movies from the local storage first,
-         * Alternately syncs with the omdb api and caches the data locally
-         * @[inputs] - "string" name of selected hero.
-         * */
-        function get(selectedHero) {
-
-            return $q.when(
-                function(){
-                    if (selectedHero){
-                        return $q.resolve(selectedHero);
-                    }else{
-                        return heroesRepository.randomHero();
-                    }
-                }()
-            )
-                .then(function (hero) {
-                    if (_cache[hero]) {
-                        return $q.resolve(_cache[hero]);
-                    } else {
-                        return moviesApi.search(hero)
-                            .then(function (response) {
-                                //save it in local cache
-                                applyChanges(response.hero, response.movies);
-
-                                return $q.resolve(response.movies);
-                            }, function () {
-                                //TODO : log the error.
-                                //TODO : resolve from local cache.
-                                return $q.resolve([]);
-                            });
-                    }
-                })
-        }
-
-
-        /**
-         * @descriptions: processes movies retrieved from database.
-         *  creates movies objects from sql results.
-         * */
-        function processResults(results) {
-
-            if (results.rows.length > 0) {
-                for (var count = 0; count < results.rows.length; count++) {
-                    var rowValue = results.rows.item(count);
-                    var hero = rowValue.key;
-                    var movies = angular.fromJson(rowValue.value);
-                    _cache[hero] = movies;
-                }
-            }
-        }
-
-        function applyChanges(hero, movies) {
-
-            if (!movies || !movies.length) {
-                return;
-            }
-
-            var insert_query = squel.insert()
-                .into(TABLE_NAME)
-                .set(COLUMN.key)
-                .set(COLUMN.value)
-                .toParam();
-
-            //insert
-            return DataStore.ExecuteQuery(insert_query.text, [hero, angular.toJson(movies)]).then(function (sucess) {
-                // add to cache
-                _cache[hero] = movies;
-                return $q.resolve();
-
-            }, function (error) {
-                //TODO : Log error
-            });
-        }
-
-        return _this;
-    }
-})();
-;
-(function () {
-    "use strict";
-
-    angular.module("starter")
         .controller("TabsController",
         [
             TabsController
@@ -969,5 +996,298 @@
         function activate(){
 
         }
+    }
+})();
+(function () {
+    "use strict";
+
+    angular.module("starter")
+        .factory("image.repository",
+        [
+            '$q',
+            'DataStore',
+            'GlobalSettings',
+            'TableNames',
+            imageRepository
+        ]
+    );
+
+    /*
+     * Stores images in sqlite databases and exposes api to interact with it.
+     * */
+    function imageRepository($q,
+                             DataStore,
+                             GlobalSettings,
+                             TableNames) {
+
+        var TABLE_NAME = TableNames.Images.Name,
+            COLUMNS = TableNames.Images.Column,
+            TEMP_LOCAL_STORAGE_KEY = "temp_images";
+
+        var _this = {
+            init: init,
+            setItem: setItem,
+            getItem: getItem,
+            hasItem: hasItem,
+            persist : persist,
+            keyCache: {}
+        };
+
+
+        function init() {
+            var defer = $q.defer();
+
+            _this.keyCache = {};
+
+            //load key/value into memory.
+            //MAKE SURE YOU DON'T LOAD BASE64 images on mobile
+            var queryBuilder = squel.select()
+                .from(TABLE_NAME)
+                .field(COLUMNS.key)
+                .field(COLUMNS.value);
+
+            _this.persist().then(function () {
+                DataStore.ExecuteQuery(queryBuilder.toString()).then(function (sqlResultSet) {
+                    for (var rowCount = 0; rowCount < sqlResultSet.rows.length; rowCount++) {
+                        var row = sqlResultSet.rows.item(rowCount);
+
+                        _this.keyCache[row[COLUMNS.key]] = GlobalSettings.APP_DATA_PATH + row[COLUMNS.value];
+                    }
+
+                    defer.resolve();
+                });
+            });
+
+            return defer.promise;
+        }
+
+        function setItem(key, value, isDelayed) {
+            var defer = $q.defer();
+
+            if (isDelayed) {
+                /*
+                 * save it in the local storage for now. And persist in database during app load.
+                 * or when persist is called.
+                 * */
+                var oldValues = window.localStorage.getItem(TEMP_LOCAL_STORAGE_KEY);
+                if (oldValues) {
+                    oldValues = angular.fromJson(oldValues);
+                } else {
+                    oldValues = {};
+                }
+                oldValues[key] = value;
+                window.localStorage.setItem(TEMP_LOCAL_STORAGE_KEY, angular.toJson(oldValues));
+            }
+
+            var insertQueryBuilder = squel.insert()
+                .into(TABLE_NAME)
+                .set(COLUMNS.key, key)
+                .set(COLUMNS.value, value)
+                .toParam(); //returns {text:sqlQuery,values:[array of values]
+
+            DataStore.ExecuteQuery(insertQueryBuilder.text, insertQueryBuilder.values)
+                .then(defer.resolve, defer.reject);
+
+            defer.promise.then(function () {
+                //once item is in db save the key
+                _this.keyCache[key] = GlobalSettings.APP_DATA_PATH + value;
+            });
+
+            return defer.promise;
+        }
+
+        function persist() {
+            var temp_images = window.localStorage.getItem(TEMP_LOCAL_STORAGE_KEY),
+                bindings = [];
+
+            if (!temp_images) {
+                return $q.resolve();
+            }
+
+            temp_images = angular.fromJson(temp_images);
+
+            _.each(temp_images, function (value, key) {
+                bindings.push([key, value]);
+            });
+
+            if (bindings.length < 1){
+                return $q.resolve();
+            }
+
+            var insertQueryBuilder = squel.insert()
+                .into(TABLE_NAME)
+                .set(COLUMNS.key, "")
+                .set(COLUMNS.value, "")
+                .toParam();
+
+            return DataStore.insertCollection(insertQueryBuilder.text, bindings).then(function () {
+                //clear the localstorage
+                window.localStorage.setItem(TEMP_LOCAL_STORAGE_KEY,angular.toJson({}));
+                return $q.resolve();
+            }, function (error) {
+                return $q.reject(error);
+            });
+        }
+
+        function getItem(key) {
+            var defer = $q.defer();
+            if (_this.hasItem(key)) {
+                defer.resolve(_this.keyCache[key]);
+            } else {
+                defer.resolve(null);
+            }
+
+            return defer.promise;
+        }
+
+        function hasItem(key) {
+            return typeof _this.keyCache[key] != "undefined";
+        }
+
+        return _this;
+    }
+
+
+})();
+
+(function () {
+    "use strict";
+
+    angular.module("starter")
+        .directive("imageCache",
+        [
+            'image.api',
+            'image.repository',
+            'GlobalSettings',
+            imageCache
+        ]
+    );
+
+    function imageCache(imageCommunicator, imageRepository, GlobalSettings) {
+        return {
+            restrict: 'A',
+            bindToController: {
+                imageCache: "@",
+            },
+            controller: ['$scope', '$element', '$attrs', Controller],
+            controllerAs: "imageCacheVM",
+            scope: {}
+        };
+
+        function Controller($scope, $element, $attrs) {
+            var imageCacheVM = this;
+
+            $attrs.$observe("imageCache", onImageCacheKeyChange);
+
+            function onImageCacheKeyChange() {
+                // get the image hash;
+                var imageSrc = getImageSrc($attrs);
+
+                if (!imageSrc) {
+                    return;
+                }
+
+                imageRepository.getItem(imageSrc)
+                    .then(function (value) {
+                        if (value) {
+                            $element.attr('src', value);
+                        } else {
+                            imageCommunicator.downloadImage(imageSrc).then(function (response) {
+                                $element.attr('src', GlobalSettings.APP_DATA_PATH + response);
+                                imageRepository.setItem(imageSrc, response);
+                            }, function (error) {
+                                $element.attr('src', GlobalSettings.NO_IMAGE_URL);
+                            });
+                        }
+                    });
+            }
+        }
+
+        function getImageSrc(elementAttrs) {
+            if (elementAttrs.imageCache.length > 0) {
+                return elementAttrs.imageCache;
+            } else if (elementAttrs.ngSrc) {
+                return elementAttrs.ngSrc;
+            } else if (elementAttrs.src) {
+                return elementAttrs.src;
+            } else {
+                return null;
+            }
+        }
+    }
+})();
+(function () {
+    'use strict';
+
+    angular.module('starter')
+        .factory('image.api',
+        [
+            '$q',
+            '$cordovaFileTransfer',
+            'GlobalSettings',
+            imageCommunicator
+        ]
+    );
+
+    function imageCommunicator($q,
+                               $cordovaFileTransfer,
+                               GlobalSettings) {
+
+        var _this = {
+            getImage: getImage,
+            downloadImage: downloadImage
+        };
+
+        function getImage(imageObj) {
+
+            var defer = $q.defer();
+
+            function toDataUrl(url, callback, outputFormat) {
+                var img = new Image();
+                img.crossOrigin = 'Anonymous';
+                img.onload = function () {
+                    var canvas = document.createElement('CANVAS');
+                    var ctx = canvas.getContext('2d');
+                    var dataURL;
+                    canvas.height = this.height;
+                    canvas.width = this.width;
+                    ctx.drawImage(this, 0, 0);
+                    dataURL = canvas.toDataURL(outputFormat);
+                    callback(dataURL);
+                    canvas = null;
+                };
+                img.src = url;
+            }
+
+            toDataUrl(imageObj, function (base64) {
+                return defer.resolve(base64);
+            });
+
+            return defer.promise;
+        }
+
+        function downloadImage(imageObj) {
+
+            if (!window.cordova) {
+                // for browsers, use traditional base64 image rendering.
+                return _this.getImage(imageObj);
+            }
+
+
+            var uri = imageObj;
+            var fileNameIndex = imageObj.lastIndexOf("/") + 1;
+            var filename = imageObj.substr(fileNameIndex);
+            var targetPath = GlobalSettings.APP_DATA_PATH + filename;
+            var headers = {};
+
+            return $cordovaFileTransfer.download(uri, targetPath, {headers: headers}, true).then(function (result) {
+                return $q.resolve(filename);
+            }, function (error) {
+                return $q.reject(error);
+            });
+
+        }
+
+        return _this;
     }
 })();

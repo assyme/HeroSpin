@@ -20,14 +20,21 @@
                 abstract: true,
                 resolve: { // putting this at the root of the route so that this has to be resolved before application start.
                     AppState: [
+                        '$q',
                         'DataStore',
                         'DbUpgrade',
                         'movies.repository',
-                        function (DataStore, DbUpgrade, moviesRepository) {
+                        'image.repository',
+                        function ($q,DataStore, DbUpgrade, moviesRepository,imageRepository) {
                             return DataStore.init()
                                 .then(DbUpgrade.upgrade)
                                 .then(function () {
-                                    return moviesRepository.load();
+                                    return $q.all([
+                                        moviesRepository.load(),
+                                        imageRepository.init()
+                                    ]).then(function(){
+                                        return $q.resolve();
+                                    });
                                 });
                         }
                     ]
