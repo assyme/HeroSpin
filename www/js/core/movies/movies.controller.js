@@ -30,8 +30,6 @@
          * */
         function activate() {
             vm.moviesList = [];
-
-
         }
 
         function onViewEnter(){
