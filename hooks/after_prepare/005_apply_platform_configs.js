@@ -134,7 +134,6 @@ var platformConfig = (function(){
             if(!configXmlData) {
                 configXmlData = this.parseElementtreeSync(path.join(rootdir, 'config.xml'));
             }
-
             return configXmlData;
         },
 
@@ -169,7 +168,7 @@ var platformConfig = (function(){
         getConfigFilesByTargetAndParent: function (platform) {
             var configFileData = this.getConfigXml().findall('platform[@name=\'' + platform + '\']/config-file');
 
-            return  _.indexBy(configFileData, function(item) {
+            return  _.keyBy(configFileData, function(item) {
                 var parent = item.attrib.parent;
                 //if parent attribute is undefined /* or */, set parent to top level elementree selector
                 if(!parent || parent === '/*' || parent === '*/') {
@@ -190,6 +189,7 @@ var platformConfig = (function(){
 
         // Retrieves the config.xml's pereferences for a given platform and parses them into JSON data
         parsePreferences: function (configData, platform) {
+
             var preferences = this.getPreferences(platform),
                 type = 'preference';
 
@@ -241,9 +241,10 @@ var platformConfig = (function(){
 
         // Parses config.xml data, and update each target file for a specified platform
         updatePlatformConfig: function (platform) {
-
             var configData = this.parseConfigXml(platform),
                 platformPath = path.join(rootdir, 'platforms', platform);
+
+            console.log("CONFIG DATA :" + configData);
 
             _.each(configData, function (configItems, targetFileName) {
                 var projectName, targetFile;
@@ -251,7 +252,6 @@ var platformConfig = (function(){
                 if (platform === 'ios' && targetFileName.indexOf("Info.plist") > -1) {
                     projectName = platformConfig.getConfigXml().findtext('name');
                     targetFile = path.join(platformPath, projectName, projectName + '-Info.plist');
-                    console.log(targetFile);
                     platformConfig.updateIosPlist(targetFile, configItems);
                 } else if (platform === 'android' && targetFileName === 'AndroidManifest.xml') {
                     targetFile = path.join(platformPath, targetFileName);
@@ -336,12 +336,11 @@ var platformConfig = (function(){
 
         _.each(platforms, function (platform) {
             try {
-
                 platform = platform.trim().toLowerCase();
                 platformConfig.updatePlatformConfig(platform);
             } catch (e) {
                 console.log(e);
-                //process.stdout.write(e);
+                process.stdout.write(e);
             }
         });
     }
