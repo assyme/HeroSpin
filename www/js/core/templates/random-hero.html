@@ -2,16 +2,16 @@
 <ion-view view-title="Hero Spin">
 
     <ion-nav-buttons  side="right">
-        <button class="button button-icon button-clear ion-loop" ng-click="movieListingVM.randomHeroMovie()"></button>
+        <button class="button button-positive button-clear " ng-click="movieListingVM.randomHeroMovie()">Spin it!</button>
     </ion-nav-buttons>
 
     <ion-content>
         <div class="list">
-            <a collection-repeat="movie in movieListingVM.moviesList track by movie.imdbID" class="item item-avatar" href="#">
+            <a collection-repeat="movie in movieListingVM.moviesList track by movie.imdbID" class="item item-thumbnail-left" href="#">
                 <img ng-src="{{movie.Poster}}">
                 <h2>{{movie.Title}}</h2>
-                <h2>{{movie.Type}}</h2>
-                <span class="item-note">{{movie.Year}}</span>
+                <p>{{movie.Type}}</p>
+                <p>{{movie.Year}}</p>
             </a>
         </div>
     </ion-content>
