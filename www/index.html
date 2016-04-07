@@ -15,10 +15,14 @@
     <!-- ionic/angularjs js -->
     <script src="lib/ionic/js/ionic.bundle.js"></script>
 
+    <!--cordova plugins (should always be before cordova.js)-->
+    <script src="js/vendors/ng-cordova.js"></script>
+
     <!-- cordova script (this will be a 404 during development) -->
     <script src="cordova.js"></script>
 
     <script src="js/vendors/lodash.min.js" type="text/javascript"></script>
+    <script src="js/vendors/squel.min.js" type="text/javascript"></script>
 
     <!-- your app's js -->
     <script src="js/core/bundle.js" type="text/javascript"></script>

@@ -32,7 +32,10 @@
             var defer = $q.defer(),
                 resolve = function (response) {
                     if (response.data && response.data.Response === "True") {
-                        defer.resolve(response.data.Search);
+                        defer.resolve({
+                            hero : heroName,
+                            movies : response.data.Search
+                        });
                     } else {
                         defer.reject();
                     }

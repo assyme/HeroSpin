@@ -2,6 +2,6 @@
 (function () {
     "use strict";
 
-    angular.module('starter', ['ionic']);
+    angular.module('starter', ['ionic','ngCordova']);
 
 })();

@@ -18,14 +18,29 @@
             .state('spin', {
                 url: '/spin',
                 abstract: true,
-                templateUrl: 'js/core/templates/tabs.html'
+                resolve: { // putting this at the root of the route so that this has to be resolved before application start.
+                    AppState: [
+                        'DataStore',
+                        'DbUpgrade',
+                        'movies.repository',
+                        function (DataStore, DbUpgrade, moviesRepository) {
+                            return DataStore.init()
+                                .then(DbUpgrade.upgrade)
+                                .then(function () {
+                                    return moviesRepository.load();
+                                });
+                        }
+                    ]
+                },
+                templateUrl: 'js/core/templates/tabs.html',
+                controller: 'TabsController as TabsVM'
             })
             .state('spin.random', {
                 url: '/random',
                 views: {
                     'tab-random-hero': {
                         templateUrl: 'js/core/templates/random-hero.html',
-                        controller : "MovieListingController as movieListingVM"
+                        controller: "MovieListingController as movieListingVM"
                     }
                 }
             })
@@ -34,7 +49,7 @@
                 views: {
                     'tab-favourite-hero': {
                         templateUrl: 'js/core/templates/favourite-hero.html',
-                        controller : 'HeroListController as heroListVM'
+                        controller: 'HeroListController as heroListVM'
                     }
                 }
             });
