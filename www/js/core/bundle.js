@@ -66,6 +66,15 @@
                         controller: 'HeroListController as heroListVM'
                     }
                 }
+            })
+            .state('spin.movieDetail',{
+                url : '/random/detail/:id',
+                views : {
+                    'tab-random-hero' : {
+                        templateUrl : 'js/core/templates/movie-detail.html',
+                        controller : "MovieDetailController as movieDetailVM"
+                    }
+                }
             });
 
         $urlRouterProvider.otherwise('/spin/random/');
@@ -225,6 +234,39 @@
     "use strict";
 
     angular.module("starter")
+        .controller(
+        'MovieDetailController',
+        [
+            '$stateParams',
+            'movies.repository',
+            MovieDetailController
+        ]
+    );
+
+    function MovieDetailController($stateParams,
+                                   movieRepository) {
+
+        var vm = this;
+
+        vm.movie_id = $stateParams.id;
+        vm.movie = {};
+
+        activate();
+
+        function activate() {
+            movieRepository.detail(vm.movie_id).then(function(movieDetails){
+                vm.movie = movieDetails;
+            });
+        }
+
+
+    }
+})();
+;
+(function () {
+    "use strict";
+
+    angular.module("starter")
         .factory("movies.api",
         [
             "$q",
@@ -243,7 +285,8 @@
         };
 
         var _this = {
-            search: search
+            search: search,
+            detail : detail
         };
 
         /**
@@ -279,6 +322,25 @@
 
             return defer.promise;
 
+        }
+
+        /**
+        * @description: gets the detail of the movie
+        * */
+        function detail(movie_id){
+
+            var request = {
+                api : CONSTANTS.URLS.searchUrl,
+                method : 'GET',
+                data : {
+                    i : movie_id
+                }
+            };
+
+            return BaseCommunicator.sendRequest(request)
+                .then(function(response){
+                    return $q.resolve(response.data);
+                });
         }
 
         return _this;
@@ -365,7 +427,8 @@
 
         var _this = {
             load: load,
-            get: get
+            get: get,
+            detail : detail
         };
 
 
@@ -417,6 +480,48 @@
                             });
                     }
                 })
+        }
+
+
+        /**
+        * @description: Get details of the movie
+        * */
+        function detail(movie_id){
+            debugger;
+            var defer = $q.defer();
+
+            if (!movie_id){
+                return $q.resolve(null);
+            }
+            var currentMovie = null,
+                currentHeroName = null,
+                currentMovieList = [];
+            _.each(_cache,function(movies,heroName){
+                _.each(movies,function(movie){
+                    if(movie.imdbID === movie_id){
+                        currentMovie = movie;
+                        currentHeroName = heroName;
+                        currentMovieList = movies;
+                        if (typeof movie.detail !== "undefined"){
+                            return $q.resolve(movie.detail);
+                        }
+                    }
+                });
+            });
+
+
+
+            moviesApi.detail(movie_id).then(function(data){
+
+                defer.resolve(data);
+                //save the detail locally
+                currentMovie.detail = data;
+
+                applyChanges(currentHeroName, currentMovieList);
+
+            });
+
+            return defer.promise;
         }
 
 
@@ -884,7 +989,6 @@
             ));
             promises.push(promise);
 
-            debugger;
             promise = DataStore.ExecuteQuery(createTable(TableNames.Movies.Name,
                     [
                         TableNames.Movies.Column.key + ' text',

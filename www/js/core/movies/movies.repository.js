@@ -26,7 +26,8 @@
 
         var _this = {
             load: load,
-            get: get
+            get: get,
+            detail : detail
         };
 
 
@@ -78,6 +79,48 @@
                             });
                     }
                 })
+        }
+
+
+        /**
+        * @description: Get details of the movie
+        * */
+        function detail(movie_id){
+            debugger;
+            var defer = $q.defer();
+
+            if (!movie_id){
+                return $q.resolve(null);
+            }
+            var currentMovie = null,
+                currentHeroName = null,
+                currentMovieList = [];
+            _.each(_cache,function(movies,heroName){
+                _.each(movies,function(movie){
+                    if(movie.imdbID === movie_id){
+                        currentMovie = movie;
+                        currentHeroName = heroName;
+                        currentMovieList = movies;
+                        if (typeof movie.detail !== "undefined"){
+                            return $q.resolve(movie.detail);
+                        }
+                    }
+                });
+            });
+
+
+
+            moviesApi.detail(movie_id).then(function(data){
+
+                defer.resolve(data);
+                //save the detail locally
+                currentMovie.detail = data;
+
+                applyChanges(currentHeroName, currentMovieList);
+
+            });
+
+            return defer.promise;
         }
 
 

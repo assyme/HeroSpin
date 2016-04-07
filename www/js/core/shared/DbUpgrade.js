@@ -68,7 +68,6 @@
             ));
             promises.push(promise);
 
-            debugger;
             promise = DataStore.ExecuteQuery(createTable(TableNames.Movies.Name,
                     [
                         TableNames.Movies.Column.key + ' text',

@@ -59,6 +59,15 @@
                         controller: 'HeroListController as heroListVM'
                     }
                 }
+            })
+            .state('spin.movieDetail',{
+                url : '/random/detail/:id',
+                views : {
+                    'tab-random-hero' : {
+                        templateUrl : 'js/core/templates/movie-detail.html',
+                        controller : "MovieDetailController as movieDetailVM"
+                    }
+                }
             });
 
         $urlRouterProvider.otherwise('/spin/random/');

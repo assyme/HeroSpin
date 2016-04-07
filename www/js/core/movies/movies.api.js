@@ -21,7 +21,8 @@
         };
 
         var _this = {
-            search: search
+            search: search,
+            detail : detail
         };
 
         /**
@@ -57,6 +58,25 @@
 
             return defer.promise;
 
+        }
+
+        /**
+        * @description: gets the detail of the movie
+        * */
+        function detail(movie_id){
+
+            var request = {
+                api : CONSTANTS.URLS.searchUrl,
+                method : 'GET',
+                data : {
+                    i : movie_id
+                }
+            };
+
+            return BaseCommunicator.sendRequest(request)
+                .then(function(response){
+                    return $q.resolve(response.data);
+                });
         }
 
         return _this;
