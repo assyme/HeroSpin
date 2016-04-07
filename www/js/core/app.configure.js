@@ -36,7 +36,7 @@
                 controller: 'TabsController as TabsVM'
             })
             .state('spin.random', {
-                url: '/random',
+                url: '/random/:name',
                 views: {
                     'tab-random-hero': {
                         templateUrl: 'js/core/templates/random-hero.html',
@@ -54,7 +54,7 @@
                 }
             });
 
-        $urlRouterProvider.otherwise('/spin/random');
+        $urlRouterProvider.otherwise('/spin/random/');
 
     }
 })();

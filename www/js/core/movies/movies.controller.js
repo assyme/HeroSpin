@@ -6,15 +6,22 @@
         .controller("MovieListingController",
         [
             "$q",
+            "$scope",
+            "$stateParams",
             "movies.repository",
             MovieListingController
         ]
     );
 
     function MovieListingController($q,
+                                    $scope,
+                                    $stateParams,
                                     moviesRepository) {
         var vm = this;
         vm.randomHeroMovie = randomHeroMovie;
+
+
+        $scope.$on('$ionicView.enter', onViewEnter);
 
         activate();
 
@@ -24,7 +31,12 @@
         function activate() {
             vm.moviesList = [];
 
-            $q.when(moviesRepository.get())
+
+        }
+
+        function onViewEnter(){
+            vm.selectedHero = $stateParams.name;
+            $q.when(moviesRepository.get(vm.selectedHero))
                 .then(function (movies) {
                     vm.moviesList = movies;
                 });

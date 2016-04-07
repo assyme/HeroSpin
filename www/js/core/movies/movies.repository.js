@@ -48,10 +48,19 @@
         /**
          * @description: gets movies from the local storage first,
          * Alternately syncs with the omdb api and caches the data locally
+         * @[inputs] - "string" name of selected hero.
          * */
-        function get() {
+        function get(selectedHero) {
 
-            return $q.when(heroesRepository.randomHero())
+            return $q.when(
+                function(){
+                    if (selectedHero){
+                        return $q.resolve(selectedHero);
+                    }else{
+                        return heroesRepository.randomHero();
+                    }
+                }()
+            )
                 .then(function (hero) {
                     if (_cache[hero]) {
                         return $q.resolve(_cache[hero]);

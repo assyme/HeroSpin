@@ -1,8 +1,8 @@
 <!--Placeholder for random app view-->
 <ion-view view-title="Choose favourite hero">
-    <ion-content class="padding">
+    <ion-content>
         <div class="list">
-            <a collection-repeat="hero in heroListVM.heroList track by hero.id" class="item item-avatar" href="#">
+            <a collection-repeat="hero in heroListVM.heroList track by hero.id" class="item item-avatar" href="#/spin/random/{{hero.name}}">
                 <img ng-src="{{hero.avatar}}">
                 <h2>{{hero.name}}</h2>
             </a>
