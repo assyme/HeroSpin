@@ -2,7 +2,10 @@
 <ion-view view-title="Choose favourite hero">
     <ion-content>
         <div class="list">
-            <a collection-repeat="hero in heroListVM.heroList track by hero.id" class="item item-avatar" href="#/spin/random/{{hero.name}}">
+            <a collection-repeat="hero in heroListVM.heroList track by hero.id"
+               class="item item-avatar"
+                    ng-click="heroListVM.selectHero(hero)">
+               <!--href="#/spin/random/{{hero.name}}">-->
                 <img ng-src="{{hero.avatar}}">
                 <h2>{{hero.name}}</h2>
             </a>

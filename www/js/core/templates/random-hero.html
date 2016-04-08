@@ -7,6 +7,10 @@
 
     <ion-content>
         <div class="list">
+            <div ng-show="movieListingVM.moviesList.length === 0" class="item item-text-wrap text-center">
+                <label>Sometimes even super heroes need rest.</label>
+                <p>Try someone else</p>
+            </div>
             <a collection-repeat="movie in movieListingVM.moviesList track by movie.imdbID" class="item item-thumbnail-left" href="#/spin/random/detail/{{movie.imdbID}}">
                 <img image-cache="{{movie.Poster}}" ng-src="{{movie.Poster}}">
                 <h2>{{movie.Title}}</h2>

@@ -141,17 +141,20 @@
         .controller("HeroListController",
         [
             "$q",
+            "$location",
             "heroes.repository",
             HeroListController
         ]
     );
 
     function HeroListController($q,
+                                $location,
                                 heroesRepository) {
 
         //this is basically the view model for the controller
         var vm = this;
         vm.heroList = [];
+        vm.selectHero = heroSelected;
 
         activate();
 
@@ -161,6 +164,12 @@
                 .then(function (heroes) {
                     vm.heroList = heroes;
                 });
+        }
+
+        function heroSelected(selectedHero) {
+            selectedHero.views += 1;
+            heroesRepository.update(selectedHero);
+            $location.path("//spin/random/" + selectedHero.name);
         }
 
     }
@@ -192,6 +201,7 @@
         var _this = {
             init: init,
             get: get,
+            update: update,
             randomHero: randomHero
         };
 
@@ -201,6 +211,7 @@
         function init() {
             var selectQuery = squel.select()
                 .from(TableNames.Heroes.Name)
+                .field(TableNames.Heroes.Column.ID)
                 .field(TableNames.Heroes.Column.NAME)
                 .field(TableNames.Heroes.Column.AVATAR)
                 .field(TableNames.Heroes.Column.VIEWS);
@@ -211,6 +222,7 @@
                         for (var count = 0; count < results.rows.length; count++) {
                             var rowValue = results.rows.item(count);
                             var hero = {};
+                            hero.id = rowValue[TableNames.Heroes.Column.ID];
                             hero.name = rowValue[TableNames.Heroes.Column.NAME];
                             hero.avatar = rowValue[TableNames.Heroes.Column.AVATAR];
                             hero.views = rowValue[TableNames.Heroes.Column.VIEWS];
@@ -227,6 +239,23 @@
          * */
         function get() {
             return _cache;
+        }
+
+        /**
+        * @descripiton: updates a selected hero
+        * */
+        function update(hero) {
+            //TODO: Add validations
+
+            var updateQuery = squel.update()
+                .table(TableNames.Heroes.Name)
+                .set(TableNames.Heroes.Column.NAME, hero.name)
+                .set(TableNames.Heroes.Column.AVATAR, hero.avatar)
+                .set(TableNames.Heroes.Column.VIEWS, hero.views)
+                .where(TableNames.Heroes.Column.ID + " == " + hero.id);
+
+            return DataStore.ExecuteQuery(updateQuery.toString());
+
         }
 
         /**
@@ -368,6 +397,7 @@
         .controller("MovieListingController",
         [
             "$q",
+            "$location",
             "$scope",
             "$stateParams",
             "movies.repository",
@@ -376,6 +406,7 @@
     );
 
     function MovieListingController($q,
+                                    $location,
                                     $scope,
                                     $stateParams,
                                     moviesRepository) {
@@ -394,7 +425,7 @@
             vm.moviesList = [];
         }
 
-        function onViewEnter(){
+        function onViewEnter() {
             vm.selectedHero = $stateParams.name;
             $q.when(moviesRepository.get(vm.selectedHero))
                 .then(function (movies) {
@@ -403,14 +434,22 @@
         }
 
         /**
-        * @description: pulls out a random hero and searches movies of that hero.
-        * */
-        function randomHeroMovie(){
+         * @description: pulls out a random hero and searches movies of that hero.
+         * */
+        function randomHeroMovie() {
             $q.when(moviesRepository.get())
-                .then(function(movies){
+                .then(function (movies) {
                     vm.moviesList = movies;
                 });
         }
+
+        function selectRandomMovie() {
+            if (vm.moviesList.length) {
+                var randomMovie = _.sample(vm.moviesList);
+                $location.path('/spin/random/detail/' + randomMovie.imdbID);
+            }
+        }
+
     }
 })();
 ;
@@ -501,7 +540,6 @@
         * @description: Get details of the movie
         * */
         function detail(movie_id){
-            debugger;
             var defer = $q.defer();
 
             if (!movie_id){
@@ -579,27 +617,6 @@
         }
 
         return _this;
-    }
-})();
-;
-(function () {
-    "use strict";
-
-    angular.module("starter")
-        .controller("TabsController",
-        [
-            TabsController
-        ]
-    );
-
-    function TabsController(){
-        var vm = this;
-
-        activate();
-
-        function activate(){
-
-        }
     }
 })();
 ;
@@ -826,7 +843,7 @@
 
         return {
             ExecuteQuery: function (query, params) {
-
+                console.log("Executing query: " + query);
                 return dbProvider.execute(db, query, params).then(function (sqlResults) {
                     return sqlResults;
                 }, function (sqlError) {
@@ -1141,6 +1158,27 @@
     angular.module("starter")
         .constant("TableNames", TableNames);
 
+})();
+;
+(function () {
+    "use strict";
+
+    angular.module("starter")
+        .controller("TabsController",
+        [
+            TabsController
+        ]
+    );
+
+    function TabsController(){
+        var vm = this;
+
+        activate();
+
+        function activate(){
+
+        }
+    }
 })();
 (function () {
     "use strict";

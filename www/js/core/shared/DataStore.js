@@ -24,7 +24,7 @@
 
         return {
             ExecuteQuery: function (query, params) {
-
+                console.log("Executing query: " + query);
                 return dbProvider.execute(db, query, params).then(function (sqlResults) {
                     return sqlResults;
                 }, function (sqlError) {

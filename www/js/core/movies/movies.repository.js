@@ -86,7 +86,6 @@
         * @description: Get details of the movie
         * */
         function detail(movie_id){
-            debugger;
             var defer = $q.defer();
 
             if (!movie_id){

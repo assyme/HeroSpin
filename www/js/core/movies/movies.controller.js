@@ -6,6 +6,7 @@
         .controller("MovieListingController",
         [
             "$q",
+            "$location",
             "$scope",
             "$stateParams",
             "movies.repository",
@@ -14,6 +15,7 @@
     );
 
     function MovieListingController($q,
+                                    $location,
                                     $scope,
                                     $stateParams,
                                     moviesRepository) {
@@ -32,7 +34,7 @@
             vm.moviesList = [];
         }
 
-        function onViewEnter(){
+        function onViewEnter() {
             vm.selectedHero = $stateParams.name;
             $q.when(moviesRepository.get(vm.selectedHero))
                 .then(function (movies) {
@@ -41,13 +43,21 @@
         }
 
         /**
-        * @description: pulls out a random hero and searches movies of that hero.
-        * */
-        function randomHeroMovie(){
+         * @description: pulls out a random hero and searches movies of that hero.
+         * */
+        function randomHeroMovie() {
             $q.when(moviesRepository.get())
-                .then(function(movies){
+                .then(function (movies) {
                     vm.moviesList = movies;
                 });
         }
+
+        function selectRandomMovie() {
+            if (vm.moviesList.length) {
+                var randomMovie = _.sample(vm.moviesList);
+                $location.path('/spin/random/detail/' + randomMovie.imdbID);
+            }
+        }
+
     }
 })();

@@ -1,9 +1,13 @@
 <!--Placeholder for random app view-->
 <ion-view view-title="Hero Spin">
     <ion-content>
-        <div ng-hide="movieDetailVM.movie.imdbID">
-            <h2>Loading...</h2>
+
+        <div ng-hide="movieDetailVM.movie.imdbID" class="list">
+            <div class="item item-text-wrap text-center">
+                <h2>Loading...</h2>
+            </div>
         </div>
+
         <div ng-show="movieDetailVM.movie.imdbID" class="list card">
 
             <div class="item item-avatar">
