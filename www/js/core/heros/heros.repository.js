@@ -66,8 +66,8 @@
         }
 
         /**
-        * @descripiton: updates a selected hero
-        * */
+         * @descripiton: updates a selected hero
+         * */
         function update(hero) {
             //TODO: Add validations
 
@@ -84,13 +84,24 @@
 
         /**
          * @description: returns a random hero name from the local cache.
-         * TODO:// add logic to put weightage on few parameters like
-         * 1. Keep count of how many times the user has selected a particular hero.
+         * //TODO:
          * 2. Keep count of how many times he accepted to view a movie of that hero.
          * */
         function randomHero() {
-            var randomNumber = _.random(0, _cache.length - 1);
-            return _cache[randomNumber].name;
+
+            //create a list of hero names with duplicate values based on how many times a user has selected the hero.
+            var duplicatedList = [];
+
+            _.each(_cache, function (hero) {
+                duplicatedList.push(hero.name);
+                for (var i = 0 ; i < hero.views ; i++){
+                    //add the hero as many times as he has been views. this will add more probability for him.
+                    duplicatedList.push(hero.name);
+                }
+            });
+
+            //shuffle the list, and then sample out one (randomizes) and gets the value
+            return _.chain(duplicatedList).shuffle().sample().value();
         }
 
         return _this;
