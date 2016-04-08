@@ -20,6 +20,7 @@
         var vm = this;
         vm.heroList = [];
         vm.selectHero = heroSelected;
+        vm.deleteHero = deleteHero;
 
         activate();
 
@@ -35,6 +36,22 @@
             selectedHero.views += 1;
             heroesRepository.update(selectedHero);
             $location.path("/spin/random/" + selectedHero.name);
+        }
+
+
+        /**
+         * @description: Deletes a hero from the app.
+         * @inputs: [object] - hero to delete
+         * */
+        function deleteHero(hero) {
+
+            if (!hero){
+                return;
+            }
+
+            heroesRepository.delete(hero).then(function(){
+                activate();
+            });
         }
 
     }

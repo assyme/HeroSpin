@@ -26,6 +26,7 @@
             init: init,
             get: get,
             update: update,
+            delete: deleteHero,
             randomHero: randomHero
         };
 
@@ -42,6 +43,7 @@
 
             return DataStore.ExecuteQuery(selectQuery.toString())
                 .then(function (results) {
+                    _cache = [];
                     if (results.rows.length > 0) {
                         for (var count = 0; count < results.rows.length; count++) {
                             var rowValue = results.rows.item(count);
@@ -82,6 +84,30 @@
 
         }
 
+
+        /**
+         * @description: Deletes the hero from the database
+         * */
+        function deleteHero(hero) {
+
+            if (!hero) {
+                throw new Error("please specify a hero to delete");
+            }
+
+            var deleteQuery = squel.delete()
+                .from(TableNames.Heroes.Name)
+                .where(TableNames.Heroes.Column.ID + " == " + hero.id);
+
+            return DataStore.ExecuteQuery(deleteQuery.toString()).then(function () {
+                //remove from the cache
+                _.remove(_cache,function(h){
+                   return h.id === hero.id;
+                });
+
+                return $q.resolve();
+            });
+        }
+
         /**
          * @description: returns a random hero name from the local cache.
          * //TODO:
@@ -94,7 +120,7 @@
 
             _.each(_cache, function (hero) {
                 duplicatedList.push(hero.name);
-                for (var i = 0 ; i < hero.views ; i++){
+                for (var i = 0; i < hero.views; i++) {
                     //add the hero as many times as he has been views. this will add more probability for him.
                     duplicatedList.push(hero.name);
                 }
