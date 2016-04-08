@@ -14,6 +14,7 @@
     function configureRoutes($stateProvider,
                              $urlRouterProvider) {
 
+
         $stateProvider
             .state('spin', {
                 url: '/spin',
@@ -25,14 +26,21 @@
                         'DbUpgrade',
                         'movies.repository',
                         'image.repository',
-                        function ($q,DataStore, DbUpgrade, moviesRepository,imageRepository) {
+                        'heroes.repository',
+                        function ($q,
+                                  DataStore,
+                                  DbUpgrade,
+                                  moviesRepository,
+                                  imageRepository,
+                                  heroesRepository) {
                             return DataStore.init()
                                 .then(DbUpgrade.upgrade)
                                 .then(function () {
                                     return $q.all([
                                         moviesRepository.load(),
-                                        imageRepository.init()
-                                    ]).then(function(){
+                                        imageRepository.init(),
+                                        heroesRepository.init()
+                                    ]).then(function () {
                                         return $q.resolve();
                                     });
                                 });
@@ -60,12 +68,12 @@
                     }
                 }
             })
-            .state('spin.movieDetail',{
-                url : '/random/detail/:id',
-                views : {
-                    'tab-random-hero' : {
-                        templateUrl : 'js/core/templates/movie-detail.html',
-                        controller : "MovieDetailController as movieDetailVM"
+            .state('spin.movieDetail', {
+                url: '/random/detail/:id',
+                views: {
+                    'tab-random-hero': {
+                        templateUrl: 'js/core/templates/movie-detail.html',
+                        controller: "MovieDetailController as movieDetailVM"
                     }
                 }
             });

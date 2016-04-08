@@ -10,7 +10,8 @@
             Column : {
                 ID : 'id',
                 NAME : 'name',
-                AVATAR : 'avatar'
+                AVATAR : 'avatar',
+                VIEWS : 'views'
             }
         },
         Images: {

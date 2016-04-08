@@ -21,6 +21,7 @@
     function configureRoutes($stateProvider,
                              $urlRouterProvider) {
 
+
         $stateProvider
             .state('spin', {
                 url: '/spin',
@@ -32,14 +33,21 @@
                         'DbUpgrade',
                         'movies.repository',
                         'image.repository',
-                        function ($q,DataStore, DbUpgrade, moviesRepository,imageRepository) {
+                        'heroes.repository',
+                        function ($q,
+                                  DataStore,
+                                  DbUpgrade,
+                                  moviesRepository,
+                                  imageRepository,
+                                  heroesRepository) {
                             return DataStore.init()
                                 .then(DbUpgrade.upgrade)
                                 .then(function () {
                                     return $q.all([
                                         moviesRepository.load(),
-                                        imageRepository.init()
-                                    ]).then(function(){
+                                        imageRepository.init(),
+                                        heroesRepository.init()
+                                    ]).then(function () {
                                         return $q.resolve();
                                     });
                                 });
@@ -67,12 +75,12 @@
                     }
                 }
             })
-            .state('spin.movieDetail',{
-                url : '/random/detail/:id',
-                views : {
-                    'tab-random-hero' : {
-                        templateUrl : 'js/core/templates/movie-detail.html',
-                        controller : "MovieDetailController as movieDetailVM"
+            .state('spin.movieDetail', {
+                url: '/random/detail/:id',
+                views: {
+                    'tab-random-hero': {
+                        templateUrl: 'js/core/templates/movie-detail.html',
+                        controller: "MovieDetailController as movieDetailVM"
                     }
                 }
             });
@@ -165,64 +173,70 @@
         .factory("heroes.repository",
         [
             "$q",
+            "DataStore",
+            "TableNames",
             heroesRepository
         ]
     );
 
-    function heroesRepository($q){
+    function heroesRepository($q,
+                              DataStore,
+                              TableNames) {
 
 
-        var _cache = [
-            {
-                id: 0,
-                name: "Storm",
-                avatar: "http://x.annihil.us/u/prod/marvel/i/mg/c/c0/537bc5db7c77d/standard_xlarge.jpg"
-            },
-            {
-                id: 1,
-                name: "Hulk",
-                avatar: "http://i.annihil.us/u/prod/marvel/i/mg/5/a0/538615ca33ab0/standard_xlarge.jpg"
-            },
-            {
-                id: 2,
-                name: "Spider-man",
-                avatar: "http://i.annihil.us/u/prod/marvel/i/mg/9/30/538cd33e15ab7/standard_xlarge.jpg"
-            },
-            {
-                id: 3,
-                name: "Fantastic four",
-                avatar: "http://i.annihil.us/u/prod/marvel/i/mg/9/60/50febc4f55525/standard_xlarge.jpg"
-            },
-            {
-                id: 4,
-                name: "Captain America",
-                avatar: "http://i.annihil.us/u/prod/marvel/i/mg/3/50/537ba56d31087/standard_xlarge.jpg"
-            }
-        ];;
+        var _cache = [];
 
         /**
-        * @description: make factory methods exposed
-        * */
+         * @description: make factory methods exposed
+         * */
         var _this = {
-            get : get,
-            randomHero : randomHero
+            init: init,
+            get: get,
+            randomHero: randomHero
         };
 
         /**
-        * @description: Gets heroes from the local storage
-        * */
-        function get(){
+         * @description : initializes the repository and loads data into memory
+         * */
+        function init() {
+            var selectQuery = squel.select()
+                .from(TableNames.Heroes.Name)
+                .field(TableNames.Heroes.Column.NAME)
+                .field(TableNames.Heroes.Column.AVATAR)
+                .field(TableNames.Heroes.Column.VIEWS);
+
+            return DataStore.ExecuteQuery(selectQuery.toString())
+                .then(function (results) {
+                    if (results.rows.length > 0) {
+                        for (var count = 0; count < results.rows.length; count++) {
+                            var rowValue = results.rows.item(count);
+                            var hero = {};
+                            hero.name = rowValue[TableNames.Heroes.Column.NAME];
+                            hero.avatar = rowValue[TableNames.Heroes.Column.AVATAR];
+                            hero.views = rowValue[TableNames.Heroes.Column.VIEWS];
+                            _cache.push(hero);
+                        }
+
+                    }
+                    return $q.resolve();
+                });
+        }
+
+        /**
+         * @description: Gets heroes from the local storage
+         * */
+        function get() {
             return _cache;
         }
 
         /**
-        * @description: returns a random hero name from the local cache.
+         * @description: returns a random hero name from the local cache.
          * TODO:// add logic to put weightage on few parameters like
          * 1. Keep count of how many times the user has selected a particular hero.
          * 2. Keep count of how many times he accepted to view a movie of that hero.
-        * */
-        function randomHero(){
-            var randomNumber = _.random(0,_cache.length - 1);
+         * */
+        function randomHero() {
+            var randomNumber = _.random(0, _cache.length - 1);
             return _cache[randomNumber].name;
         }
 
@@ -565,6 +579,27 @@
         }
 
         return _this;
+    }
+})();
+;
+(function () {
+    "use strict";
+
+    angular.module("starter")
+        .controller("TabsController",
+        [
+            TabsController
+        ]
+    );
+
+    function TabsController(){
+        var vm = this;
+
+        activate();
+
+        function activate(){
+
+        }
     }
 })();
 ;
@@ -984,9 +1019,34 @@
                 [
                     TableNames.Heroes.Column.ID + ' integer primary key autoincrement',
                     TableNames.Heroes.Column.NAME + ' text',
-                    TableNames.Heroes.Column.AVATAR + ' text'
+                    TableNames.Heroes.Column.AVATAR + ' text',
+                    TableNames.Heroes.Column.VIEWS + ' integer'
                 ]
             ));
+            promises.push(promise);
+
+            //Add some default heroes
+            var insertHeroes = squel.insert()
+                .into(TableNames.Heroes.Name)
+                .set(TableNames.Heroes.Column.NAME)
+                .set(TableNames.Heroes.Column.AVATAR)
+                .set(TableNames.Heroes.Column.VIEWS)
+                .toParam();
+
+            var heroes = [];
+            heroes.push(["Avengers","https://i.annihil.us/u/prod/marvel/i/mg/3/a0/537ba3793915b/standard_xlarge.jpg",0]);
+            heroes.push(["Iron Man","https://i.annihil.us/u/prod/marvel/i/mg/6/a0/55b6a25e654e6/standard_xlarge.jpg",0]);
+            heroes.push(["Captain America","https://i.annihil.us/u/prod/marvel/i/mg/3/50/537ba56d31087/standard_xlarge.jpg",0]);
+            heroes.push(["Hulk","https://i.annihil.us/u/prod/marvel/i/mg/5/a0/538615ca33ab0/standard_xlarge.jpg",0]);
+            heroes.push(["Spider-man","https://i.annihil.us/u/prod/marvel/i/mg/9/30/538cd33e15ab7/standard_xlarge.jpg",0]);
+            heroes.push(["Thor","http://x.annihil.us/u/prod/marvel/i/mg/c/c0/537bc5db7c77d/standard_xlarge.jpg",0]);
+            heroes.push(["X-Men","https://i.annihil.us/u/prod/marvel/i/mg/8/03/510c08f345938/standard_xlarge.jpg",0]);
+            heroes.push(["Fantastic four","https://i.annihil.us/u/prod/marvel/i/mg/9/60/50febc4f55525/standard_xlarge.jpg",0]);
+            heroes.push(["Black Widow","https://i.annihil.us/u/prod/marvel/i/mg/9/10/537ba3f27a6e0/standard_xlarge.jpg",0]);
+            heroes.push(["SHEILD","https://i.annihil.us/u/prod/marvel/i/mg/6/20/51097abb8e306/standard_xlarge.jpg",0]);
+
+
+            promise = DataStore.insertCollection(insertHeroes.text,heroes);
             promises.push(promise);
 
             promise = DataStore.ExecuteQuery(createTable(TableNames.Movies.Name,
@@ -1058,7 +1118,8 @@
             Column : {
                 ID : 'id',
                 NAME : 'name',
-                AVATAR : 'avatar'
+                AVATAR : 'avatar',
+                VIEWS : 'views'
             }
         },
         Images: {
@@ -1080,27 +1141,6 @@
     angular.module("starter")
         .constant("TableNames", TableNames);
 
-})();
-;
-(function () {
-    "use strict";
-
-    angular.module("starter")
-        .controller("TabsController",
-        [
-            TabsController
-        ]
-    );
-
-    function TabsController(){
-        var vm = this;
-
-        activate();
-
-        function activate(){
-
-        }
-    }
 })();
 (function () {
     "use strict";
