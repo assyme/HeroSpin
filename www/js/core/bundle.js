@@ -169,7 +169,7 @@
         function heroSelected(selectedHero) {
             selectedHero.views += 1;
             heroesRepository.update(selectedHero);
-            $location.path("//spin/random/" + selectedHero.name);
+            $location.path("/spin/random/" + selectedHero.name);
         }
 
     }
