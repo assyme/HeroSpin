@@ -1,0 +1,32 @@
+<!--Placeholder for random app view-->
+<ion-view view-title="Hero Spin">
+    <ion-content>
+
+        <div ng-hide="movieDetailVM.movie.imdbID" class="list">
+            <div class="item item-text-wrap text-center">
+                <h2>Loading...</h2>
+            </div>
+        </div>
+
+        <div ng-show="movieDetailVM.movie.imdbID" class="list card">
+
+            <div class="item item-avatar">
+                <img src="{{movieDetailVM.movie.Poster}}">
+                <h2>{{movieDetailVM.movie.Title}}</h2>
+                <p>Release on {{movieDetailVM.movie.Released}}</p>
+            </div>
+
+            <div class="item item-body">
+                <img class="full-image" src="{{movieDetailVM.movie.Poster}}">
+                <p>
+                    {{movieDetailVM.movie.Plot}}
+                </p>
+                <p>
+                    <a href="#" class="subdued">{{movieDetailVM.movie.imdbVotes}} Votes</a>
+                    <a href="#" class="subdued">{{movieDetailVM.movie.imdbRating}} Rating</a>
+                </p>
+            </div>
+
+        </div>
+    </ion-content>
+</ion-view>
