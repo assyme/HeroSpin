@@ -39,6 +39,10 @@
             $q.when(moviesRepository.get(vm.selectedHero))
                 .then(function (movies) {
                     vm.moviesList = movies;
+                },function(){
+                    //TODO : handle rejections
+                },function(movies){
+                    vm.moviesList = vm.moviesList.concat(movies);
                 });
         }
 
@@ -49,6 +53,10 @@
             $q.when(moviesRepository.get())
                 .then(function (movies) {
                     vm.moviesList = movies;
+                },function(){
+                    //TODO : handle rejections
+                },function(movies){
+                    vm.moviesList = vm.moviesList.concat(movies);
                 });
         }
 

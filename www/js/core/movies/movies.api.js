@@ -22,7 +22,7 @@
 
         var _this = {
             search: search,
-            detail : detail
+            detail: detail
         };
 
         /**
@@ -32,13 +32,21 @@
 
             var defer = $q.defer(),
                 resolve = function (response) {
-                    if (response.data && response.data.Response === "True") {
+                    if (response.length) {
                         defer.resolve({
-                            hero : heroName,
-                            movies : response.data.Search
+                            hero: heroName,
+                            movies: response
                         });
                     } else {
                         defer.reject();
+                    }
+                },
+                notify = function (response) {
+                    if (response.length){
+                        defer.notify({
+                            hero : heroName,
+                            movies : response
+                        });
                     }
                 };
 
@@ -49,32 +57,35 @@
             var request = {
                 api: CONSTANTS.URLS.searchUrl,
                 method: 'GET',
-                data: {s: heroName}
+                data: {
+                    s: heroName,
+                    page: 1
+                }
             };
 
 
             BaseCommunicator.sendRequest(request)
-                .then(resolve, defer.reject, defer.notify);
+                .then(resolve, defer.reject, notify);
 
             return defer.promise;
 
         }
 
         /**
-        * @description: gets the detail of the movie
-        * */
-        function detail(movie_id){
+         * @description: gets the detail of the movie
+         * */
+        function detail(movie_id) {
 
             var request = {
-                api : CONSTANTS.URLS.searchUrl,
-                method : 'GET',
-                data : {
-                    i : movie_id
+                api: CONSTANTS.URLS.searchUrl,
+                method: 'GET',
+                data: {
+                    i: movie_id
                 }
             };
 
             return BaseCommunicator.sendRequest(request)
-                .then(function(response){
+                .then(function (response) {
                     return $q.resolve(response.data);
                 });
         }

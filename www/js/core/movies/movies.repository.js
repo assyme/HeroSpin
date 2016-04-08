@@ -27,7 +27,7 @@
         var _this = {
             load: load,
             get: get,
-            detail : detail
+            detail: detail
         };
 
 
@@ -43,7 +43,7 @@
             return DataStore.ExecuteQuery(selectQuery.toString()).then(function (results) {
                 processResults(results);
                 return $q.resolve();
-            },$q.reject);
+            }, $q.reject);
         }
 
         /**
@@ -53,54 +53,59 @@
          * */
         function get(selectedHero) {
 
-            return $q.when(
-                function(){
-                    if (selectedHero){
+            var defer = $q.defer();
+
+            $q.when(
+                function () {
+                    if (selectedHero) {
                         return $q.resolve(selectedHero);
-                    }else{
+                    } else {
                         return heroesRepository.randomHero();
                     }
                 }()
-            )
-                .then(function (hero) {
+            ).then(function (hero) {
                     if (_cache[hero]) {
-                        return $q.resolve(_cache[hero]);
+                        defer.resolve(_cache[hero]);
                     } else {
                         return moviesApi.search(hero)
                             .then(function (response) {
                                 //save it in local cache
                                 applyChanges(response.hero, response.movies);
-
-                                return $q.resolve(response.movies);
+                                defer.resolve(response.movies);
                             }, function () {
                                 //TODO : log the error.
-                                //TODO : resolve from local cache.
-                                return $q.resolve([]);
+                                defer.reject();
+                            }, function (response) {
+                                //save the heroes locally as and when they are fetched.
+                                applyChanges(response.hero, response.movies);
+                                defer.notify(response.movies);
                             });
                     }
-                })
+                });
+
+            return defer.promise;
         }
 
 
         /**
-        * @description: Get details of the movie
-        * */
-        function detail(movie_id){
+         * @description: Get details of the movie
+         * */
+        function detail(movie_id) {
             var defer = $q.defer();
 
-            if (!movie_id){
+            if (!movie_id) {
                 return $q.resolve(null);
             }
             var currentMovie = null,
                 currentHeroName = null,
                 currentMovieList = [];
-            _.each(_cache,function(movies,heroName){
-                _.each(movies,function(movie){
-                    if(movie.imdbID === movie_id){
+            _.each(_cache, function (movies, heroName) {
+                _.each(movies, function (movie) {
+                    if (movie.imdbID === movie_id) {
                         currentMovie = movie;
                         currentHeroName = heroName;
                         currentMovieList = movies;
-                        if (typeof movie.detail !== "undefined"){
+                        if (typeof movie.detail !== "undefined") {
                             return $q.resolve(movie.detail);
                         }
                     }
@@ -108,8 +113,7 @@
             });
 
 
-
-            moviesApi.detail(movie_id).then(function(data){
+            moviesApi.detail(movie_id).then(function (data) {
 
                 defer.resolve(data);
                 //save the detail locally

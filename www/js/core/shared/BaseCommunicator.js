@@ -77,16 +77,14 @@
                     }).then(function (response) {
                         //check if this api has pagination
                         pendingTasks.shift();
-                        if (response.data.per_page) {
-                            defer.cumulate_data = defer.cumulate_data || {};
-                            defer.notify(response.data);
-                            for (var key in response.data.data) {
-                                defer.cumulate_data[key] = response.data.data[key];
-                            }
-
-                            if (response.data.page === 1) {
+                        if (request.data.page) {
+                            defer.cumulate_data = defer.cumulate_data || [];
+                            defer.notify(response.data.Search);
+                            defer.cumulate_data = defer.cumulate_data.concat(response.data.Search);
+                            if (request.data.page === 1) {
                                 var count = 1;
-                                while (count * response.data.per_page < response.data.count) {
+                                var promises = [];
+                                while (count * response.data.Search.length < response.data.totalResults) {
                                     //schedule request for as many pages.
                                     count++;
                                     var newRequest = _.cloneDeep(request);

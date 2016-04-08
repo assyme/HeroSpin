@@ -383,7 +383,7 @@
 
         var _this = {
             search: search,
-            detail : detail
+            detail: detail
         };
 
         /**
@@ -393,13 +393,21 @@
 
             var defer = $q.defer(),
                 resolve = function (response) {
-                    if (response.data && response.data.Response === "True") {
+                    if (response.length) {
                         defer.resolve({
-                            hero : heroName,
-                            movies : response.data.Search
+                            hero: heroName,
+                            movies: response
                         });
                     } else {
                         defer.reject();
+                    }
+                },
+                notify = function (response) {
+                    if (response.length){
+                        defer.notify({
+                            hero : heroName,
+                            movies : response
+                        });
                     }
                 };
 
@@ -410,32 +418,35 @@
             var request = {
                 api: CONSTANTS.URLS.searchUrl,
                 method: 'GET',
-                data: {s: heroName}
+                data: {
+                    s: heroName,
+                    page: 1
+                }
             };
 
 
             BaseCommunicator.sendRequest(request)
-                .then(resolve, defer.reject, defer.notify);
+                .then(resolve, defer.reject, notify);
 
             return defer.promise;
 
         }
 
         /**
-        * @description: gets the detail of the movie
-        * */
-        function detail(movie_id){
+         * @description: gets the detail of the movie
+         * */
+        function detail(movie_id) {
 
             var request = {
-                api : CONSTANTS.URLS.searchUrl,
-                method : 'GET',
-                data : {
-                    i : movie_id
+                api: CONSTANTS.URLS.searchUrl,
+                method: 'GET',
+                data: {
+                    i: movie_id
                 }
             };
 
             return BaseCommunicator.sendRequest(request)
-                .then(function(response){
+                .then(function (response) {
                     return $q.resolve(response.data);
                 });
         }
@@ -484,6 +495,10 @@
             $q.when(moviesRepository.get(vm.selectedHero))
                 .then(function (movies) {
                     vm.moviesList = movies;
+                },function(){
+                    //TODO : handle rejections
+                },function(movies){
+                    vm.moviesList = vm.moviesList.concat(movies);
                 });
         }
 
@@ -494,6 +509,10 @@
             $q.when(moviesRepository.get())
                 .then(function (movies) {
                     vm.moviesList = movies;
+                },function(){
+                    //TODO : handle rejections
+                },function(movies){
+                    vm.moviesList = vm.moviesList.concat(movies);
                 });
         }
 
@@ -535,7 +554,7 @@
         var _this = {
             load: load,
             get: get,
-            detail : detail
+            detail: detail
         };
 
 
@@ -551,7 +570,7 @@
             return DataStore.ExecuteQuery(selectQuery.toString()).then(function (results) {
                 processResults(results);
                 return $q.resolve();
-            },$q.reject);
+            }, $q.reject);
         }
 
         /**
@@ -561,54 +580,59 @@
          * */
         function get(selectedHero) {
 
-            return $q.when(
-                function(){
-                    if (selectedHero){
+            var defer = $q.defer();
+
+            $q.when(
+                function () {
+                    if (selectedHero) {
                         return $q.resolve(selectedHero);
-                    }else{
+                    } else {
                         return heroesRepository.randomHero();
                     }
                 }()
-            )
-                .then(function (hero) {
+            ).then(function (hero) {
                     if (_cache[hero]) {
-                        return $q.resolve(_cache[hero]);
+                        defer.resolve(_cache[hero]);
                     } else {
                         return moviesApi.search(hero)
                             .then(function (response) {
                                 //save it in local cache
                                 applyChanges(response.hero, response.movies);
-
-                                return $q.resolve(response.movies);
+                                defer.resolve(response.movies);
                             }, function () {
                                 //TODO : log the error.
-                                //TODO : resolve from local cache.
-                                return $q.resolve([]);
+                                defer.reject();
+                            }, function (response) {
+                                //save the heroes locally as and when they are fetched.
+                                applyChanges(response.hero, response.movies);
+                                defer.notify(response.movies);
                             });
                     }
-                })
+                });
+
+            return defer.promise;
         }
 
 
         /**
-        * @description: Get details of the movie
-        * */
-        function detail(movie_id){
+         * @description: Get details of the movie
+         * */
+        function detail(movie_id) {
             var defer = $q.defer();
 
-            if (!movie_id){
+            if (!movie_id) {
                 return $q.resolve(null);
             }
             var currentMovie = null,
                 currentHeroName = null,
                 currentMovieList = [];
-            _.each(_cache,function(movies,heroName){
-                _.each(movies,function(movie){
-                    if(movie.imdbID === movie_id){
+            _.each(_cache, function (movies, heroName) {
+                _.each(movies, function (movie) {
+                    if (movie.imdbID === movie_id) {
                         currentMovie = movie;
                         currentHeroName = heroName;
                         currentMovieList = movies;
-                        if (typeof movie.detail !== "undefined"){
+                        if (typeof movie.detail !== "undefined") {
                             return $q.resolve(movie.detail);
                         }
                     }
@@ -616,8 +640,7 @@
             });
 
 
-
-            moviesApi.detail(movie_id).then(function(data){
+            moviesApi.detail(movie_id).then(function (data) {
 
                 defer.resolve(data);
                 //save the detail locally
@@ -752,16 +775,14 @@
                     }).then(function (response) {
                         //check if this api has pagination
                         pendingTasks.shift();
-                        if (response.data.per_page) {
-                            defer.cumulate_data = defer.cumulate_data || {};
-                            defer.notify(response.data);
-                            for (var key in response.data.data) {
-                                defer.cumulate_data[key] = response.data.data[key];
-                            }
-
-                            if (response.data.page === 1) {
+                        if (request.data.page) {
+                            defer.cumulate_data = defer.cumulate_data || [];
+                            defer.notify(response.data.Search);
+                            defer.cumulate_data = defer.cumulate_data.concat(response.data.Search);
+                            if (request.data.page === 1) {
                                 var count = 1;
-                                while (count * response.data.per_page < response.data.count) {
+                                var promises = [];
+                                while (count * response.data.Search.length < response.data.totalResults) {
                                     //schedule request for as many pages.
                                     count++;
                                     var newRequest = _.cloneDeep(request);
