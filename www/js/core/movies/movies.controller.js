@@ -52,11 +52,11 @@
         function randomHeroMovie() {
             $q.when(moviesRepository.get())
                 .then(function (movies) {
-                    vm.moviesList = movies;
+                    vm.moviesList = _.shuffle(movies);
                 },function(){
                     //TODO : handle rejections
                 },function(movies){
-                    vm.moviesList = _.shuffle(vm.moviesList.concat(movies));
+                    vm.moviesList = vm.moviesList.concat(movies);
                 });
         }
 
