@@ -31,15 +31,14 @@ $ npm install -g cordova ionic
 Then you will need Gulp installed globally:
 
 ```sh
-$ npm i -g gulp
+$ npm install -g gulp
 ```
 
 ```sh
+$ ionic state reset
 $ npm install
-$ ionic platform add ios
-$ cordova plugin add https://github.com/litehelpers/Cordova-sqlite-storage.git
-$ cordova plugin add cordova-plugin-file-transfer
 $ ionic build ios
+$ ionic emulate ios
 ```
 ### Run in ios
 Once the app is successfully build using `ionic build ios`. Open the project in xcode. And run it on your device. 
@@ -50,7 +49,7 @@ Want to contribute? Great!
 
 Open your favorite Terminal and run these commands.
 
-First Tab: This will watch all your JS files and build them.
+First Tab: This will watch all your JS files (see the task names watchjs in gulpfile.js) and build them.
 ```sh
 $ gulp watchjs
 ```
