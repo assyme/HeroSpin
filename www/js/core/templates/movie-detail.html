@@ -11,13 +11,13 @@
         <div ng-show="movieDetailVM.movie.imdbID" class="list card">
 
             <div class="item item-avatar">
-                <img src="{{movieDetailVM.movie.Poster}}">
+                <img image-cache="{{movieDetailVM.movie.Poster}}">
                 <h2>{{movieDetailVM.movie.Title}}</h2>
                 <p>Release on {{movieDetailVM.movie.Released}}</p>
             </div>
 
             <div class="item item-body">
-                <img class="full-image" src="{{movieDetailVM.movie.Poster}}">
+                <img class="full-image" image-cache="{{movieDetailVM.movie.Poster}}">
                 <p>
                     {{movieDetailVM.movie.Plot}}
                 </p>
