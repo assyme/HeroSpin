@@ -12,7 +12,7 @@
                 <p>Try someone else</p>
             </div>
             <a collection-repeat="movie in movieListingVM.moviesList track by movie.imdbID" class="item item-thumbnail-left" href="#/spin/random/detail/{{movie.imdbID}}">
-                <img image-cache="{{movie.Poster}}" ng-src="{{movie.Poster}}">
+                <img image-cache="{{movie.Poster}}">
                 <h2>{{movie.Title}}</h2>
                 <p>{{movie.Type}}</p>
                 <p>{{movie.Year}}</p>

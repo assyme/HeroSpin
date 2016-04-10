@@ -2,7 +2,7 @@
     "use strict";
 
     var GlobalSettings = {
-        NO_IMAGE_URL : "img/no_pic_available.jpg",
+        NO_IMAGE_URL : "img/no-image.png",
         APP_DATA_PATH : ""
     };
 

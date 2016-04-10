@@ -34,6 +34,11 @@
                 if (!imageSrc) {
                     return;
                 }
+                debugger;
+                if (imageSrc === "N/A"){
+                    $element.attr('src', GlobalSettings.NO_IMAGE_URL);
+                    return;
+                }
 
                 imageRepository.getItem(imageSrc)
                     .then(function (value) {
